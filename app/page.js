@@ -107,8 +107,11 @@ useEffect(() => {
   };
 }, []);
 
+  // Init: fetch counts, set up observer and canvases (one-time)
   useEffect(() => {
-    (async () => {
+    let observer;
+
+    const init = async () => {
       // initialize progress/count from API
       try {
         const r = await fetch('/api/send', { method: 'GET' });
@@ -120,7 +123,8 @@ useEffect(() => {
         }
       } catch (e) {}
 
-      const target = document.getElementById("progress-section");
+      const target = document.getElementById('progress-section');
+
       // Helper to check initial visibility and set progress if already visible
       const ensureInitialProgress = () => {
         if (!target) return;
@@ -133,7 +137,7 @@ useEffect(() => {
         }
       };
 
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         (entries) => {
           const visible = entries[0].isIntersecting;
           setProgressVisible(visible);
@@ -152,229 +156,235 @@ useEffect(() => {
 
       const backgroundCanvas = document.getElementById('particles-background');
       if (backgroundCanvas) {
-      const ctxBg = backgroundCanvas.getContext('2d');
-      const dprBg = Math.min(window.devicePixelRatio || 1, 1.5);
-      backgroundCanvas.width = Math.floor(window.innerWidth * dprBg);
-      backgroundCanvas.height = Math.floor(window.innerHeight * dprBg);
-      ctxBg.setTransform(dprBg, 0, 0, dprBg, 0, 0);
+        const ctxBg = backgroundCanvas.getContext('2d');
+        const dprBg = Math.min(window.devicePixelRatio || 1, 1.5);
+        backgroundCanvas.width = Math.floor(window.innerWidth * dprBg);
+        backgroundCanvas.height = Math.floor(window.innerHeight * dprBg);
+        ctxBg.setTransform(dprBg, 0, 0, dprBg, 0, 0);
 
-      const bgParticles = [];
-      for (let i = 0; i < 120; i++) {
-        bgParticles.push({
-          x: Math.random() * backgroundCanvas.width,
-          y: Math.random() * backgroundCanvas.height,
-          radius: Math.random() * 3 + 1,
-          dx: (Math.random() - 0.5) * 0.2,
-          dy: (Math.random() - 0.5) * 0.2
-        });
-      }
-
-      function animateBgParticles() {
-        ctxBg.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
-        bgParticles.forEach(p => {
-          ctxBg.beginPath();
-          ctxBg.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctxBg.fillStyle = 'rgba(255, 255, 255, 0.6)';
-          ctxBg.shadowColor = '#fff';
-          ctxBg.shadowBlur = 4;
-          ctxBg.fill();
-
-          p.x += p.dx;
-          p.y += p.dy;
-
-          if (p.x <= 0 || p.x >= backgroundCanvas.width) p.dx *= -1;
-          if (p.y <= 0 || p.y >= backgroundCanvas.height) p.dy *= -1;
-        });
-        requestAnimationFrame(animateBgParticles);
-      }
-      animateBgParticles();
-
-      window.addEventListener('resize', () => {
-        const dprBg2 = Math.min(window.devicePixelRatio || 1, 1.5);
-        backgroundCanvas.width = Math.floor(window.innerWidth * dprBg2);
-        backgroundCanvas.height = Math.floor(window.innerHeight * dprBg2);
-        ctxBg.setTransform(dprBg2, 0, 0, dprBg2, 0, 0);
-      });
-    }
-
-    const canvas = document.getElementById('particles');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const particlesArray = [];
-
-      function getComputedParticleColor() {
-        return getComputedStyle(document.documentElement).getPropertyValue('--particle-color').trim() || '#FFFFFF';
-      }
-
-      let mouse = { x: null, y: null };
-
-      window.addEventListener('mousemove', (e) => {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
-      });
-
-      for (let i = 0; i < 70; i++) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        particlesArray.push({
-          x,
-          y,
-          baseX: x,
-          baseY: y,
-          radius: Math.random() * 2 + 1,
-          color: getComputedParticleColor(),
-          dx: (Math.random() - 0.5) * 0.5,
-          dy: (Math.random() - 0.5) * 0.5,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3
-        });
-      }
-
-      let currentParticleColor = getComputedParticleColor();
-      let frameCount = 0;
-
-      function animate() {
-        frameCount++;
-        if (frameCount % 10 === 0) {
-          currentParticleColor = getComputedParticleColor();
+        const bgParticles = [];
+        for (let i = 0; i < 120; i++) {
+          bgParticles.push({
+            x: Math.random() * backgroundCanvas.width,
+            y: Math.random() * backgroundCanvas.height,
+            radius: Math.random() * 3 + 1,
+            dx: (Math.random() - 0.5) * 0.2,
+            dy: (Math.random() - 0.5) * 0.2,
+          });
         }
-        ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        particlesArray.forEach((p) => {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = currentParticleColor;
-          ctx.shadowColor = currentParticleColor;
-          ctx.shadowBlur = 4;
-          ctx.fill();
 
-          p.x += p.dx;
-          p.y += p.dy;
+        function animateBgParticles() {
+          ctxBg.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+          bgParticles.forEach((p) => {
+            ctxBg.beginPath();
+            ctxBg.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctxBg.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctxBg.shadowColor = '#fff';
+            ctxBg.shadowBlur = 4;
+            ctxBg.fill();
 
-          if (mouse.x && mouse.y) {
-            const dx = mouse.x - p.x;
-            const dy = mouse.y - p.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const maxDistance = 400;
+            p.x += p.dx;
+            p.y += p.dy;
 
-            if (distance < maxDistance) {
-              const force = 0.005 * (1 - distance / maxDistance); // fade with distance
-              p.x += dx * force;
-              p.y += dy * force;
+            if (p.x <= 0 || p.x >= backgroundCanvas.width) p.dx *= -1;
+            if (p.y <= 0 || p.y >= backgroundCanvas.height) p.dy *= -1;
+          });
+          requestAnimationFrame(animateBgParticles);
+        }
+        animateBgParticles();
+
+        window.addEventListener('resize', () => {
+          const dprBg2 = Math.min(window.devicePixelRatio || 1, 1.5);
+          backgroundCanvas.width = Math.floor(window.innerWidth * dprBg2);
+          backgroundCanvas.height = Math.floor(window.innerHeight * dprBg2);
+          ctxBg.setTransform(dprBg2, 0, 0, dprBg2, 0, 0);
+        });
+      }
+
+      const canvas = document.getElementById('particles');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        canvas.width = Math.floor(window.innerWidth * dpr);
+        canvas.height = Math.floor(window.innerHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const particlesArray = [];
+
+        function getComputedParticleColor() {
+          return (
+            getComputedStyle(document.documentElement)
+              .getPropertyValue('--particle-color')
+              .trim() || '#FFFFFF'
+          );
+        }
+
+        let mouse = { x: null, y: null };
+
+        window.addEventListener('mousemove', (e) => {
+          mouse.x = e.clientX;
+          mouse.y = e.clientY;
+        });
+
+        for (let i = 0; i < 70; i++) {
+          const x = Math.random() * canvas.width;
+          const y = Math.random() * canvas.height;
+          particlesArray.push({
+            x,
+            y,
+            baseX: x,
+            baseY: y,
+            radius: Math.random() * 2 + 1,
+            color: getComputedParticleColor(),
+            dx: (Math.random() - 0.5) * 0.5,
+            dy: (Math.random() - 0.5) * 0.5,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+          });
+        }
+
+        let currentParticleColor = getComputedParticleColor();
+        let frameCount = 0;
+
+        function animate() {
+          frameCount++;
+          if (frameCount % 10 === 0) {
+            currentParticleColor = getComputedParticleColor();
+          }
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          particlesArray.forEach((p) => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = currentParticleColor;
+            ctx.shadowColor = currentParticleColor;
+            ctx.shadowBlur = 4;
+            ctx.fill();
+
+            p.x += p.dx;
+            p.y += p.dy;
+
+            if (mouse.x && mouse.y) {
+              const dx = mouse.x - p.x;
+              const dy = mouse.y - p.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              const maxDistance = 400;
+
+              if (distance < maxDistance) {
+                const force = 0.005 * (1 - distance / maxDistance); // fade with distance
+                p.x += dx * force;
+                p.y += dy * force;
+              }
+            }
+
+            p.x += p.vx;
+            p.y += p.vy;
+
+            p.vx *= 0.995; // gradual slowdown for smoother motion
+            p.vy *= 0.995;
+
+            if (p.vx > 0.3 || p.vx < -0.3) p.vx *= -1;
+            if (p.vy > 0.3 || p.vy < -0.3) p.vy *= -1;
+
+            if (p.x <= 0 || p.x >= canvas.width) p.vx *= -1;
+            if (p.y <= 0 || p.y >= canvas.height) p.vy *= -1;
+
+            if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
+            if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
+          });
+
+          for (let i = 0; i < particlesArray.length; i++) {
+            let connections = 0;
+            for (let j = i + 1; j < particlesArray.length && connections < 3; j++) {
+              const dx = particlesArray[i].x - particlesArray[j].x;
+              const dy = particlesArray[i].y - particlesArray[j].y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance < 120) {
+                const opacity = 1 - distance / 120; // fade with distance
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.3})`;
+                ctx.lineWidth = 1;
+                ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+                ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+                ctx.stroke();
+                connections++;
+              }
             }
           }
 
-          p.x += p.vx;
-          p.y += p.vy;
-
-          p.vx *= 0.995; // gradual slowdown for smoother motion
-          p.vy *= 0.995;
-
-          if (p.vx > 0.3 || p.vx < -0.3) p.vx *= -1;
-          if (p.vy > 0.3 || p.vy < -0.3) p.vy *= -1;
-
-          if (p.x <= 0 || p.x >= canvas.width) p.vx *= -1;
-          if (p.y <= 0 || p.y >= canvas.height) p.vy *= -1;
-
-          if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
-          if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
-        });
-
-        for (let i = 0; i < particlesArray.length; i++) {
-          let connections = 0;
-          for (let j = i + 1; j < particlesArray.length && connections < 3; j++) {
-            const dx = particlesArray[i].x - particlesArray[j].x;
-            const dy = particlesArray[i].y - particlesArray[j].y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < 120) {
-              const opacity = 1 - distance / 120; // fade with distance
-              ctx.beginPath();
-              ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.3})`;
-              ctx.lineWidth = 1;
-              ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
-              ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
-              ctx.stroke();
-              connections++;
-            }
-          }
+          requestAnimationFrame(animate);
         }
 
-        requestAnimationFrame(animate);
-      }
+        animate();
 
-      animate();
-
-      window.addEventListener('resize', () => {
-        const dpr2 = Math.min(window.devicePixelRatio || 1, 1.5);
-        canvas.width = Math.floor(window.innerWidth * dpr2);
-        canvas.height = Math.floor(window.innerHeight * dpr2);
-        ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
-      });
-    }
-
-    const extraCanvas = document.getElementById('extra-particles');
-    if (extraCanvas) {
-      const ctxExtra = extraCanvas.getContext('2d');
-      const dprExtra = Math.min(window.devicePixelRatio || 1, 1.5);
-      extraCanvas.width = Math.floor(window.innerWidth * dprExtra);
-      extraCanvas.height = Math.floor(window.innerHeight * dprExtra);
-      ctxExtra.setTransform(dprExtra, 0, 0, dprExtra, 0, 0);
-
-      const extraParticles = [];
-      for (let i = 0; i < 100; i++) {
-        extraParticles.push({
-          x: Math.random() * extraCanvas.width,
-          y: Math.random() * extraCanvas.height,
-          radius: Math.random() * 2 + 1,
-          dx: (Math.random() - 0.5) * 0.3,
-          dy: (Math.random() - 0.5) * 0.3
+        window.addEventListener('resize', () => {
+          const dpr2 = Math.min(window.devicePixelRatio || 1, 1.5);
+          canvas.width = Math.floor(window.innerWidth * dpr2);
+          canvas.height = Math.floor(window.innerHeight * dpr2);
+          ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
         });
       }
 
-      function animateExtra() {
-        ctxExtra.clearRect(0, 0, extraCanvas.width, extraCanvas.height);
-        extraParticles.forEach(p => {
-          ctxExtra.beginPath();
-          ctxExtra.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctxExtra.fillStyle = 'rgba(255,255,255,0.5)';
-          ctxExtra.fill();
+      const extraCanvas = document.getElementById('extra-particles');
+      if (extraCanvas) {
+        const ctxExtra = extraCanvas.getContext('2d');
+        const dprExtra = Math.min(window.devicePixelRatio || 1, 1.5);
+        extraCanvas.width = Math.floor(window.innerWidth * dprExtra);
+        extraCanvas.height = Math.floor(window.innerHeight * dprExtra);
+        ctxExtra.setTransform(dprExtra, 0, 0, dprExtra, 0, 0);
 
-          p.x += p.dx;
-          p.y += p.dy;
+        const extraParticles = [];
+        for (let i = 0; i < 100; i++) {
+          extraParticles.push({
+            x: Math.random() * extraCanvas.width,
+            y: Math.random() * extraCanvas.height,
+            radius: Math.random() * 2 + 1,
+            dx: (Math.random() - 0.5) * 0.3,
+            dy: (Math.random() - 0.5) * 0.3,
+          });
+        }
 
-          if (p.x <= 0 || p.x >= extraCanvas.width) p.dx *= -1;
-          if (p.y <= 0 || p.y >= extraCanvas.height) p.dy *= -1;
+        function animateExtra() {
+          ctxExtra.clearRect(0, 0, extraCanvas.width, extraCanvas.height);
+          extraParticles.forEach((p) => {
+            ctxExtra.beginPath();
+            ctxExtra.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctxExtra.fillStyle = 'rgba(255,255,255,0.5)';
+            ctxExtra.fill();
+
+            p.x += p.dx;
+            p.y += p.dy;
+
+            if (p.x <= 0 || p.x >= extraCanvas.width) p.dx *= -1;
+            if (p.y <= 0 || p.y >= extraCanvas.height) p.dy *= -1;
+          });
+          requestAnimationFrame(animateExtra);
+        }
+        animateExtra();
+
+        window.addEventListener('resize', () => {
+          const dprExtra2 = Math.min(window.devicePixelRatio || 1, 1.5);
+          extraCanvas.width = Math.floor(window.innerWidth * dprExtra2);
+          extraCanvas.height = Math.floor(window.innerHeight * dprExtra2);
+          ctxExtra.setTransform(dprExtra2, 0, 0, dprExtra2, 0, 0);
         });
-        requestAnimationFrame(animateExtra);
       }
-      animateExtra();
+    };
 
-      window.addEventListener('resize', () => {
-        const dprExtra2 = Math.min(window.devicePixelRatio || 1, 1.5);
-        extraCanvas.width = Math.floor(window.innerWidth * dprExtra2);
-        extraCanvas.height = Math.floor(window.innerHeight * dprExtra2);
-        ctxExtra.setTransform(dprExtra2, 0, 0, dprExtra2, 0, 0);
-      });
-    }
+    init();
 
-      return () => {
-        if (target) observer.unobserve(target);
-        observer.disconnect();
-      };
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, []); // one-time init
+
   // React to changes in targetProgress or visibility and push the width
   useEffect(() => {
     if (progressVisible) {
       setProgress(targetProgress);
     }
   }, [targetProgress, progressVisible]);
-    })();
-  }, [targetProgress]);
 
   return (
     <>
