@@ -1,15 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 @import "tailwindcss";
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --particle-color: rgba(255, 255, 255, 0.8);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.social-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.social-icon-wrapper:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 25px rgba(139, 95, 255, 0.8);
+}
+
+.social-icon-img {
+  width: 24px;
+  height: 24px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +37,372 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.fade-in-up-delayed {
+  animation: fadeInUp 1s ease-out forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(139, 95, 255, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 24px rgba(139, 95, 255, 0.9));
+  }
+}
+
+.logo-pulse {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.sound-waves {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wave {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 95, 255, 0.3), transparent 70%);
+  animation: waveAnimation 4s infinite ease-in-out;
+  filter: blur(60px);
+}
+
+.wave:nth-child(2) {
+  animation-delay: 2s;
+  opacity: 0.5;
+}
+
+.wave:nth-child(3) {
+  animation-delay: 1s;
+  opacity: 0.4;
+}
+
+.wave:nth-child(4) {
+  animation-delay: 3s;
+  opacity: 0.6;
+}
+
+@keyframes waveAnimation {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+}
+
+/* Obsah musí být nad vlnami */
+/* Obsah musí být nad vlnami */
+.animated-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(-45deg, #0a0a0a, #1a0b2e, #2a0044, #140022, #0a0a0a);
+  background-size: 600% 600%;
+  animation: gradientMove 30s ease-in-out infinite, pulseIntensity 16s ease-in-out infinite alternate;
+  z-index: 0;
+  mix-blend-mode: normal;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 0%;
+  }
+  20% {
+    background-position: 100% 0%;
+  }
+  40% {
+    background-position: 100% 100%;
+  }
+  60% {
+    background-position: 0% 100%;
+  }
+  80% {
+    background-position: 50% 50%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
+@keyframes pulseIntensity {
+  0% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.6) saturate(1.4);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+}
+
+#particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5; /* Ensure it's above background but below content */
+}
+
+#particles canvas {
+  background: transparent;
+  color: var(--particle-color);
+}
+
+.content-wrapper {
+  position: relative;
+  z-index: 20;
+}
+
+
+/* Animated audio-visual progress wave effect */
+.progress-wave {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #8B5FFF, #A78BFA);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.progress-bar-segment {
+  width: 6px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  transition: height 0.3s ease;
+  transform-origin: bottom;
+}
+
+.progress-bar-segment:nth-child(1) {
+  animation-delay: 0s;
+}
+.progress-bar-segment:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.progress-bar-segment:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.progress-bar-segment:nth-child(4) {
+  animation-delay: 0.6s;
+}
+.progress-bar-segment:nth-child(5) {
+  animation-delay: 0.8s;
+}
+.progress-bar-segment:nth-child(6) {
+  animation-delay: 1s;
+}
+
+
+.pattern-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 2px, transparent 2px, transparent 6px),
+              repeating-linear-gradient(-60deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 2px, transparent 2px, transparent 6px);
+  animation: patternMove 40s linear infinite;
+  z-index: 1;
+  mix-blend-mode: soft-light;
+  opacity: 0.6;
+}
+
+@keyframes patternMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 600px 600px;
+  }
+}
+
+/* === Fancy Toast (popup) styles === */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(22, 14, 37, 0.9);
+  border: 1px solid rgba(139, 95, 255, 0.35);
+  box-shadow: 0 10px 40px rgba(139, 95, 255, 0.25), inset 0 0 40px rgba(139, 95, 255, 0.12);
+  color: #EDEDED;
+  backdrop-filter: blur(10px);
+  transform: translateY(-10px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toast.show {
+  animation: toast-in 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.toast.hide {
+  animation: toast-out 260ms cubic-bezier(0.55, 0, 0.45, 1) forwards;
+}
+
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  60% { opacity: 1; transform: translateY(0) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-out {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+
+.toast-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: radial-gradient(120% 120% at 0% 0%, #8B5FFF 0%, #5E2BFF 65%, #2B0E5E 100%);
+  box-shadow: 0 0 18px rgba(139, 95, 255, 0.55);
+}
+
+.toast-title {
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.toast-text {
+  font-size: 0.95rem;
+  opacity: 0.92;
+}
+
+.toast-close {
+  margin-left: 6px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #EDEDED;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.toast-close:hover { 
+  transform: scale(1.05); 
+  background: rgba(139, 95, 255, 0.25); 
+  box-shadow: 0 0 18px rgba(139, 95, 255, 0.35);
+}
+
+/* Progress underline that fills while the toast is visible */
+.toast-progress {
+  position: absolute;
+  left: 0;  right: 0; bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #8B5FFF, #C084FC);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+.toast-progress.run {
+  animation: toast-progress 4.2s linear forwards;
+}
+
+@keyframes toast-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* === Signup progress bar (fills smoothly & stays clipped with rounded corners) === */
+.signup-progress {
+  position: relative;
+  width: 100%;
+  height: 12px;              /* slimmer bar height */
+  border-radius: 9999px;     /* fully rounded ends */
+  background: rgba(255, 255, 255, 0.12); /* visible track */
+  overflow: hidden;          /* keeps fill rounded/clipped */
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.35);
+  backdrop-filter: saturate(120%) blur(0.5px);
+}
+
+.signup-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0%;                /* will be updated inline */
+  background: linear-gradient(90deg, #7C4DFF, #B694FF, #7C4DFF);
+  background-size: 200% 100%;
+  border-radius: inherit;    /* keep same rounding */
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  filter: drop-shadow(0 0 10px rgba(139,95,255,0.45));
+}
+
+/* optional: soft animated sheen across the fill */
+.signup-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient( to right, transparent 0%, rgba(255,255,255,0.18) 40%, transparent 80% );
+  mix-blend-mode: screen;
+  animation: progressSheen 3.6s linear infinite;
+}
+
+@keyframes progressSheen {
+  0% { transform: translateX(-30%); }
+  100% { transform: translateX(130%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signup-progress-fill { transition: none; }
 }

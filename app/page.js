@@ -1,103 +1,595 @@
-import Image from "next/image";
+"use client";
+
+import Head from "next/head";
+import { useEffect, useState } from "react";
+
+function showToast({ title, message, icon }) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  const displayIcon = typeof icon === "string" ? icon : "🎉";
+  toast.innerHTML = `
+    <div class="toast-icon">${displayIcon}</div>
+    <div>
+      <div class="toast-title">${title}</div>
+      <div class="toast-text">${message}</div>
+    </div>
+    <button type="button" class="toast-close" aria-label="Close">&times;</button>
+    <div class="toast-progress"></div>
+  `;
+  document.body.appendChild(toast);
+
+  // enable interactions (CSS base had pointer-events: none)
+  toast.style.pointerEvents = 'auto';
+
+  // start show animation
+  // use rAF to ensure the element is in the DOM before toggling the class
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+    const bar = toast.querySelector('.toast-progress');
+    if (bar) bar.classList.add('run');
+    // Set the progress bar animation duration to 6000ms
+    if (bar) bar.style.setProperty('animation-duration', '6000ms');
+  });
+
+  // --- improved lifecycle so the toast never gets stuck ---
+  const DURATION = 6000;
+  let hideTimer;
+
+  const pause = () => {
+    const bar = toast.querySelector('.toast-progress');
+    if (bar) bar.style.animationPlayState = 'paused';
+    if (hideTimer) clearTimeout(hideTimer);
+  };
+
+  const resume = () => {
+    const bar = toast.querySelector('.toast-progress');
+    if (bar) bar.style.animationPlayState = 'running';
+    // give the user ~1.5s to move the mouse away, then hide
+    hideTimer = setTimeout(close, 1500);
+  };
+
+  const close = () => {
+    // cleanup listeners & timers to avoid leaks
+    toast.removeEventListener('mouseenter', pause);
+    toast.removeEventListener('mouseleave', resume);
+    if (hideTimer) clearTimeout(hideTimer);
+    toast.classList.remove('show');
+    toast.classList.add('hide'); // matches `.toast.hide` in CSS
+    setTimeout(() => toast.remove(), 260);
+  };
+
+  const closeBtn = toast.querySelector('.toast-close');
+  if (closeBtn) closeBtn.addEventListener('click', close);
+
+  // auto-hide after DURATION (same as progress bar)
+  hideTimer = setTimeout(close, DURATION);
+
+  // pause on hover, resume on mouse leave
+  toast.addEventListener('mouseenter', pause);
+  toast.addEventListener('mouseleave', resume);
+
+  // hard safety: if something pauses forever, force close later
+  setTimeout(() => {
+    if (document.body.contains(toast)) close();
+  }, DURATION + 3000);
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [progress, setProgress] = useState(0);
+  const [progressVisible, setProgressVisible] = useState(false);
+  const [segments, setSegments] = useState([]);
+  const [email, setEmail] = useState("");
+  const [joinedCount, setJoinedCount] = useState(0);
+  const [targetProgress, setTargetProgress] = useState(0);
+  const GOAL = 5000;
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+useEffect(() => {
+  const generatedSegments = Array.from({ length: 80 }).map(() => {
+    return {
+      delay: `${Math.random().toFixed(3)}s`,
+      duration: `${(0.4 + Math.random() * 0.8).toFixed(2)}s`,
+      height: `${(6 + Math.random() * 14).toFixed(2)}px`
+    };
+  });
+  setSegments(generatedSegments);
+
+  const interval = setInterval(() => {
+    setSegments(prev =>
+      prev.map(seg => ({
+        ...seg,
+        height: `${(6 + Math.random() * 14).toFixed(2)}px`
+      }))
+    );
+  }, 300);
+
+  return () => {
+    clearInterval(interval);
+  };
+}, []);
+
+  useEffect(() => {
+    (async () => {
+      // initialize progress/count from API
+      try {
+        const r = await fetch('/api/send', { method: 'GET' });
+        const j = await r.json();
+        if (typeof j.count === 'number' && typeof j.goal === 'number') {
+          setJoinedCount(j.count);
+          const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
+          setTargetProgress(pct);
+        }
+      } catch (e) {}
+
+      const target = document.getElementById("progress-section");
+      // Helper to check initial visibility and set progress if already visible
+      const ensureInitialProgress = () => {
+        if (!target) return;
+        const rect = target.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const inView = rect.top < vh && rect.bottom >= 0;
+        if (inView) {
+          setProgressVisible(true);
+          setProgress(targetProgress);
+        }
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries[0].isIntersecting;
+          setProgressVisible(visible);
+          if (visible) {
+            setProgress(targetProgress);
+          }
+        },
+        { threshold: 0.4 }
+      );
+
+      if (target) {
+        observer.observe(target);
+        // in case the section is already in view on first render
+        ensureInitialProgress();
+      }
+
+      const backgroundCanvas = document.getElementById('particles-background');
+      if (backgroundCanvas) {
+      const ctxBg = backgroundCanvas.getContext('2d');
+      const dprBg = Math.min(window.devicePixelRatio || 1, 1.5);
+      backgroundCanvas.width = Math.floor(window.innerWidth * dprBg);
+      backgroundCanvas.height = Math.floor(window.innerHeight * dprBg);
+      ctxBg.setTransform(dprBg, 0, 0, dprBg, 0, 0);
+
+      const bgParticles = [];
+      for (let i = 0; i < 120; i++) {
+        bgParticles.push({
+          x: Math.random() * backgroundCanvas.width,
+          y: Math.random() * backgroundCanvas.height,
+          radius: Math.random() * 3 + 1,
+          dx: (Math.random() - 0.5) * 0.2,
+          dy: (Math.random() - 0.5) * 0.2
+        });
+      }
+
+      function animateBgParticles() {
+        ctxBg.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+        bgParticles.forEach(p => {
+          ctxBg.beginPath();
+          ctxBg.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctxBg.fillStyle = 'rgba(255, 255, 255, 0.6)';
+          ctxBg.shadowColor = '#fff';
+          ctxBg.shadowBlur = 4;
+          ctxBg.fill();
+
+          p.x += p.dx;
+          p.y += p.dy;
+
+          if (p.x <= 0 || p.x >= backgroundCanvas.width) p.dx *= -1;
+          if (p.y <= 0 || p.y >= backgroundCanvas.height) p.dy *= -1;
+        });
+        requestAnimationFrame(animateBgParticles);
+      }
+      animateBgParticles();
+
+      window.addEventListener('resize', () => {
+        const dprBg2 = Math.min(window.devicePixelRatio || 1, 1.5);
+        backgroundCanvas.width = Math.floor(window.innerWidth * dprBg2);
+        backgroundCanvas.height = Math.floor(window.innerHeight * dprBg2);
+        ctxBg.setTransform(dprBg2, 0, 0, dprBg2, 0, 0);
+      });
+    }
+
+    const canvas = document.getElementById('particles');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.floor(window.innerWidth * dpr);
+      canvas.height = Math.floor(window.innerHeight * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const particlesArray = [];
+
+      function getComputedParticleColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--particle-color').trim() || '#FFFFFF';
+      }
+
+      let mouse = { x: null, y: null };
+
+      window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      });
+
+      for (let i = 0; i < 70; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        particlesArray.push({
+          x,
+          y,
+          baseX: x,
+          baseY: y,
+          radius: Math.random() * 2 + 1,
+          color: getComputedParticleColor(),
+          dx: (Math.random() - 0.5) * 0.5,
+          dy: (Math.random() - 0.5) * 0.5,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3
+        });
+      }
+
+      let currentParticleColor = getComputedParticleColor();
+      let frameCount = 0;
+
+      function animate() {
+        frameCount++;
+        if (frameCount % 10 === 0) {
+          currentParticleColor = getComputedParticleColor();
+        }
+        ctx.fillStyle = "rgba(0, 0, 0, 0.06)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        particlesArray.forEach((p) => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = currentParticleColor;
+          ctx.shadowColor = currentParticleColor;
+          ctx.shadowBlur = 4;
+          ctx.fill();
+
+          p.x += p.dx;
+          p.y += p.dy;
+
+          if (mouse.x && mouse.y) {
+            const dx = mouse.x - p.x;
+            const dy = mouse.y - p.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const maxDistance = 400;
+
+            if (distance < maxDistance) {
+              const force = 0.005 * (1 - distance / maxDistance); // fade with distance
+              p.x += dx * force;
+              p.y += dy * force;
+            }
+          }
+
+          p.x += p.vx;
+          p.y += p.vy;
+
+          p.vx *= 0.995; // gradual slowdown for smoother motion
+          p.vy *= 0.995;
+
+          if (p.vx > 0.3 || p.vx < -0.3) p.vx *= -1;
+          if (p.vy > 0.3 || p.vy < -0.3) p.vy *= -1;
+
+          if (p.x <= 0 || p.x >= canvas.width) p.vx *= -1;
+          if (p.y <= 0 || p.y >= canvas.height) p.vy *= -1;
+
+          if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
+          if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
+        });
+
+        for (let i = 0; i < particlesArray.length; i++) {
+          let connections = 0;
+          for (let j = i + 1; j < particlesArray.length && connections < 3; j++) {
+            const dx = particlesArray[i].x - particlesArray[j].x;
+            const dy = particlesArray[i].y - particlesArray[j].y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 120) {
+              const opacity = 1 - distance / 120; // fade with distance
+              ctx.beginPath();
+              ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.3})`;
+              ctx.lineWidth = 1;
+              ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+              ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+              ctx.stroke();
+              connections++;
+            }
+          }
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+
+      window.addEventListener('resize', () => {
+        const dpr2 = Math.min(window.devicePixelRatio || 1, 1.5);
+        canvas.width = Math.floor(window.innerWidth * dpr2);
+        canvas.height = Math.floor(window.innerHeight * dpr2);
+        ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
+      });
+    }
+
+    const extraCanvas = document.getElementById('extra-particles');
+    if (extraCanvas) {
+      const ctxExtra = extraCanvas.getContext('2d');
+      const dprExtra = Math.min(window.devicePixelRatio || 1, 1.5);
+      extraCanvas.width = Math.floor(window.innerWidth * dprExtra);
+      extraCanvas.height = Math.floor(window.innerHeight * dprExtra);
+      ctxExtra.setTransform(dprExtra, 0, 0, dprExtra, 0, 0);
+
+      const extraParticles = [];
+      for (let i = 0; i < 100; i++) {
+        extraParticles.push({
+          x: Math.random() * extraCanvas.width,
+          y: Math.random() * extraCanvas.height,
+          radius: Math.random() * 2 + 1,
+          dx: (Math.random() - 0.5) * 0.3,
+          dy: (Math.random() - 0.5) * 0.3
+        });
+      }
+
+      function animateExtra() {
+        ctxExtra.clearRect(0, 0, extraCanvas.width, extraCanvas.height);
+        extraParticles.forEach(p => {
+          ctxExtra.beginPath();
+          ctxExtra.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctxExtra.fillStyle = 'rgba(255,255,255,0.5)';
+          ctxExtra.fill();
+
+          p.x += p.dx;
+          p.y += p.dy;
+
+          if (p.x <= 0 || p.x >= extraCanvas.width) p.dx *= -1;
+          if (p.y <= 0 || p.y >= extraCanvas.height) p.dy *= -1;
+        });
+        requestAnimationFrame(animateExtra);
+      }
+      animateExtra();
+
+      window.addEventListener('resize', () => {
+        const dprExtra2 = Math.min(window.devicePixelRatio || 1, 1.5);
+        extraCanvas.width = Math.floor(window.innerWidth * dprExtra2);
+        extraCanvas.height = Math.floor(window.innerHeight * dprExtra2);
+        ctxExtra.setTransform(dprExtra2, 0, 0, dprExtra2, 0, 0);
+      });
+    }
+
+      return () => {
+        if (target) observer.unobserve(target);
+        observer.disconnect();
+      };
+  // React to changes in targetProgress or visibility and push the width
+  useEffect(() => {
+    if (progressVisible) {
+      setProgress(targetProgress);
+    }
+  }, [targetProgress, progressVisible]);
+    })();
+  }, [targetProgress]);
+
+  return (
+    <>
+      <div className="relative min-h-screen text-white font-inter flex flex-col justify-between">
+        <canvas
+          id="extra-particles"
+          className="fixed top-0 left-0 w-full h-full z-15"
+          style={{
+            opacity: 0.6,
+            pointerEvents: 'none'
+          }}
+        ></canvas>
+        <div className="animated-gradient"></div>
+        <canvas
+          id="particles-background"
+          className="fixed top-0 left-0 w-full h-full z-10"
+          style={{
+            opacity: 0.5,
+            mixBlendMode: 'soft-light',
+            pointerEvents: 'none'
+          }}
+        ></canvas>
+        <canvas
+          id="particles"
+          className="fixed top-0 left-0 w-full h-full z-10"
+          style={{
+            opacity: 0.8,
+            mixBlendMode: 'overlay'
+          }}
+        ></canvas>
+        <div className="content-wrapper relative z-20">
+          <>
+            <Head>
+              <title>SoundChain – Web3 Music Platform</title>
+              <meta
+                name="description"
+                content="Join the future of music with Web3. Get early access to SoundChain."
+              />
+            </Head>
+
+            {/* Main Content */}
+            <main className="flex-grow">
+              {/* Hero Section */}
+              <header className="max-w-4xl mx-auto text-center py-12 px-4">
+                {/* Logo */}
+                <div className="flex justify-center mb-[-60px]" data-aos="fade-up">
+                  <img
+                    src="/logo.png"
+                    alt="SoundChain Logo"
+                    className="w-[630px] max-w-full ml-[-0px] logo-pulse"
+                  />
+                </div>
+
+                {/* Title */}
+                <h1
+                  className="text-4xl md:text-6xl font-bold mt-[-10px] mb-4"
+                  data-aos="fade-up"
+                  data-aos-delay="200"
+                >
+                  SoundChain – Music, Ownership, Community.
+                </h1>
+
+                {/* Description */}
+                <div className="" data-aos="fade-up" data-aos-delay="400">
+                  <p className="text-lg md:text-xl mb-4 text-gray-300">
+                    Own the music you love. Discover the future of music with Web3.
+                  </p>
+                  <p className="text-md md:text-lg text-gray-400 max-w-2xl mx-auto mb-6">
+                    A new music platform that empowers artists, fans, and creators
+                    through blockchain. NFTs, rewards, and real-world perks — all in
+                    one ecosystem.
+                  </p>
+                </div>
+
+                {/* CTA */}
+                <div
+                  className="flex flex-col items-center space-y-4"
+                  data-aos="fade-up"
+                  data-aos-delay="600"
+                >
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="px-4 py-3 rounded-xl w-96 text-white bg-transparent focus:outline-none border-2 border-[#8B5FFF] focus:border-[#a58fff] shadow-[0_0_10px_transparent] focus:shadow-[0_0_15px_#8B5FFF] transition duration-300"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                  <button
+                    className="bg-[#8B5FFF] hover:bg-[#7a4fe0] hover:shadow-[0_0_20px_#8B5FFF] px-6 py-3 rounded-xl font-bold text-lg transition duration-300 transform hover:scale-105"
+                    onClick={async () => {
+                      if (!email) {
+                        showToast({
+                          title: "Email required",
+                          message: "Please enter your email to join early access.",
+                          icon: "❌"
+                        });
+                        return;
+                      }
+                      try {
+                        const res = await fetch("/api/send", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json"
+                          },
+                          body: JSON.stringify({ email })
+                        });
+                        if (res.ok) {
+                          const j = await res.json();
+                          setEmail("");
+                          if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
+                            setJoinedCount(j.count);
+                            const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
+                            setTargetProgress(pct);
+                            if (document.getElementById('progress-section')) {
+                              setProgress(pct);
+                            }
+                          }
+                          showToast({
+                            title: "You're in!",
+                            message: "Thanks for joining early access to SoundChain.",
+                            icon: "🎉"
+                          });
+                        } else {
+                          showToast({
+                            title: "Oops!",
+                            message: "There was an error. Please try again.",
+                            icon: "🎉"
+                          });
+                        }
+                      } catch (err) {
+                        showToast({
+                          title: "Oops!",
+                          message: "There was an error. Please try again.",
+                          icon: "🎉"
+                        });
+                        console.error(err);
+                      }
+                    }}
+                  >
+                    Join Early Access
+                  </button>
+                </div>
+              </header>
+
+              {/* Progress Bar */}
+              <section
+                id="progress-section"
+                className="max-w-4xl mx-auto px-4 mb-12"
+                data-aos="fade-up"
+                data-aos-delay="800"
+              >
+                <div className="signup-progress mb-2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress)}>
+                  <div
+                    className="signup-progress-fill"
+                    style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
+                  ></div>
+                </div>
+                <p className="text-center text-gray-400">{joinedCount.toLocaleString()} people joined</p>
+              </section>
+
+              {/* Benefits Section */}
+              <section
+                className="max-w-4xl mx-auto px-4 grid md:grid-cols-3 gap-8 text-center mb-16"
+                data-aos="fade-up"
+                data-aos-delay="1000"
+              >
+                <div className="transition-transform duration-300 hover:scale-105">
+                  <img src="/nft.png" alt="NFT Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
+                  <h3 className="font-bold text-xl mb-2">NFT Releases</h3>
+                  <p className="text-gray-400">Own your favorite tracks</p>
+                </div>
+                <div className="transition-transform duration-300 hover:scale-105">
+                  <img src="/community.png" alt="Community Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
+                  <h3 className="font-bold text-xl mb-2">Community Rewards</h3>
+                  <p className="text-gray-400">Support artists, get perks</p>
+                </div>
+                <div className="transition-transform duration-300 hover:scale-105">
+                  <img src="/creator.png" alt="Creator Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
+                  <h3 className="font-bold text-xl mb-2">Creator Economy</h3>
+                  <p className="text-gray-400">Fair splits for artists & producers</p>
+                </div>
+              </section>
+            </main>
+
+            {/* Footer */}
+            <footer
+              className="text-center text-gray-500 py-6"
+              data-aos="fade-up"
+              data-aos-delay="1200"
+            >
+              <div className="flex justify-center space-x-6 mb-4">
+                <a
+                  href="https://x.com/joinsoundchain"
+                  aria-label="X (Twitter)"
+                  className="social-icon-wrapper"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img src="/twitter-icon.svg" alt="X" className="social-icon-img" />
+                </a>
+                <a
+                  href="https://www.instagram.com/joinsoundchain/?utm_source=ig_web_button_share_sheet"
+                  aria-label="Instagram"
+                  className="social-icon-wrapper"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img src="/instagram-icon.svg" alt="Instagram" className="social-icon-img" />
+                </a>
+              </div>
+              <p>Coming soon — Powered by Web3</p>
+            </footer>
+          </>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }
