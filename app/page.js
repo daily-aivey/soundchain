@@ -506,9 +506,9 @@ useEffect(() => {
                           console.log("Non-JSON response from /api/send:", txt);
                         }
 
-                        if (res.ok && j && j.ok) {
+                        if (res.ok) {
                           setEmail("");
-                          if (typeof j.count === 'number' && typeof j.goal === 'number') {
+                          if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
                             setJoinedCount(j.count);
                             const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
                             setTargetProgress(pct);
@@ -524,7 +524,7 @@ useEffect(() => {
                         } else {
                           showToast({
                             title: "Oops!",
-                            message: "There was an error. Please try again.",
+                            message: `There was an error (status ${res.status}). Please try again.`,
                             icon: "❌"
                           });
                         }
