@@ -114,7 +114,11 @@ useEffect(() => {
     const init = async () => {
       // initialize progress/count from API
       try {
-        const r = await fetch('/api/send', { method: 'GET' });
+        const r = await fetch('/api/send', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          cache: 'no-store'
+        });
         const j = await r.json();
         if (typeof j.count === 'number' && typeof j.goal === 'number') {
           setJoinedCount(j.count);
@@ -487,14 +491,24 @@ useEffect(() => {
                         const res = await fetch("/api/send", {
                           method: "POST",
                           headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
                           },
+                          cache: 'no-store',
                           body: JSON.stringify({ email })
                         });
-                        if (res.ok) {
-                          const j = await res.json();
+
+                        let j;
+                        try {
+                          j = await res.json();
+                        } catch (e) {
+                          const txt = await res.text();
+                          console.log("Non-JSON response from /api/send:", txt);
+                        }
+
+                        if (res.ok && j && j.ok) {
                           setEmail("");
-                          if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
+                          if (typeof j.count === 'number' && typeof j.goal === 'number') {
                             setJoinedCount(j.count);
                             const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
                             setTargetProgress(pct);
@@ -511,14 +525,14 @@ useEffect(() => {
                           showToast({
                             title: "Oops!",
                             message: "There was an error. Please try again.",
-                            icon: "🎉"
+                            icon: "❌"
                           });
                         }
                       } catch (err) {
                         showToast({
                           title: "Oops!",
                           message: "There was an error. Please try again.",
-                          icon: "🎉"
+                          icon: "❌"
                         });
                         console.error(err);
                       }

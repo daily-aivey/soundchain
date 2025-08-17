@@ -49,7 +49,10 @@ export async function POST(req) {
     console.log('Resend API response:', result);
 
     if (result?.error) {
-      return new Response(JSON.stringify({ ok: false, error: result.error }), { status: 422 });
+      return new Response(
+        JSON.stringify({ ok: false, error: result.error }),
+        { status: 422, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }
+      );
     }
 
     // increment signup counter on success
@@ -58,11 +61,14 @@ export async function POST(req) {
 
     return new Response(
       JSON.stringify({ ok: true, id: result?.data?.id, count: updated, goal: GOAL }),
-      { status: 200 }
+      { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }
     );
   } catch (error) {
     console.error("Error sending email:", error);
-    return new Response(JSON.stringify({ error }), { status: 500 });
+    return new Response(
+      JSON.stringify({ ok: false, message: error?.message || 'send_failed' }),
+      { status: 500, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }
+    );
   }
 }
 
@@ -157,8 +163,14 @@ function getWelcomeEmailHtml(siteUrl, xUrl, igUrl) {
 export async function GET() {
   try {
     const count = await readCount();
-    return new Response(JSON.stringify({ count, goal: GOAL }), { status: 200 });
+    return new Response(
+      JSON.stringify({ count, goal: GOAL }),
+      { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }
+    );
   } catch (e) {
-    return new Response(JSON.stringify({ count: 0, goal: GOAL }), { status: 200 });
+    return new Response(
+      JSON.stringify({ count: 0, goal: GOAL }),
+      { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } }
+    );
   }
 }
