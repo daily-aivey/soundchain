@@ -406,3 +406,136 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .signup-progress-fill { transition: none; }
 }
+/* =============================
+   Hero typography polish utils
+   ============================= */
+:root {
+  /* accents reused across effects */
+  --accent-1: #8B5FFF;  /* purple */
+  --accent-2: #4FC3F7;  /* cyan */
+  --accent-3: #C084FC;  /* violet */
+}
+
+/* Big gradient headline that stays readable on dark bg.
+   Tweaked stops to remove “dark rim” under descenders. */
+.hero-gradient-text {
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #f4ecff 32%,
+    #e6d9ff 58%,
+    #d6c6ff 78%,
+    #c1adff 92%,
+    #b693ff 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* subtle white lift to avoid dark fringe on glyph bottoms */
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+
+/* Soft outer glow for extra pop without heavy GPU cost */
+.hero-glow {
+  text-shadow:
+    0 0 18px rgba(163, 135, 255, 0.45),
+    0 0 36px rgba(163, 135, 255, 0.28);
+}
+
+/* Subtitle: slightly brighter + subtle shadow for contrast */
+.hero-subtitle {
+  color: rgba(237, 237, 237, 0.92);
+  text-shadow: 0 1px 10px rgba(139,95,255,0.18);
+}
+
+/* Highlight specific words in the paragraph (wrap with &lt;span&gt;) */
+.hero-highlight {
+  position: relative;
+  background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 10px rgba(139,95,255,0.25));
+}
+
+/* Optional: animated underline (only if you add ::after in markup) */
+.accent-underline {
+  position: relative;
+}
+
+/* Optional slow shimmer on the underline (no base underline here) */
+.accent-underline.sheen::after {
+  background-size: 200% 100%;
+  animation: underlineSheen 6s linear infinite;
+}
+@keyframes underlineSheen {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+/* Utility to keep H1 compact without clipping glow */
+.hero-tightline {
+  line-height: 1.08;
+  letter-spacing: -0.005em;
+}
+
+.hero-dot-sep > * + *::before {
+  content: "•";
+  margin: 0 10px;
+  color: rgba(255,255,255,0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accent-underline.sheen::after { animation: none; }
+}
+
+/* --- Hard kill any leftover underline artifacts & isolate hero --- */
+.hero-gradient-text::after,
+.accent-underline::after {
+  content: none !important;
+  display: none !important;
+}
+
+h1.hero-gradient-text {
+  text-decoration: none !important;
+  border: 0 !important;
+}
+
+/* Prevent backdrop canvases / blend layers from altering hero text */
+.hero-wrap {
+  isolation: isolate;
+}
+
+/* =============================
+   Hero staged reveal (slower)
+   ============================= */
+.hero-seq [data-step] {
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  filter: blur(2px);
+  transition:
+    opacity 1500ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1500ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1500ms ease;
+  will-change: opacity, transform, filter;
+}
+
+.hero-seq [data-step].show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+}
+
+/* Soft stagger once visible */
+.hero-seq [data-step="2"].show { transition-delay: 200ms; }
+.hero-seq [data-step="3"].show { transition-delay: 400ms; }
+.hero-seq [data-step="4"].show { transition-delay: 600ms; }
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .hero-seq [data-step] {
+    transition: none;
+    transform: none;
+    filter: none;
+  }
+}

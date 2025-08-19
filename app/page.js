@@ -107,6 +107,43 @@ useEffect(() => {
   };
 }, []);
 
+  // Hero staged reveal by scroll distance (show only logo on load)
+  useEffect(() => {
+    const seq = document.getElementById('hero-seq');
+    if (!seq) return;
+
+    const step1 = seq.querySelector('[data-step="1"]'); // logo
+    const step2 = seq.querySelector('[data-step="2"]'); // title
+    const step3 = seq.querySelector('[data-step="3"]'); // description
+    const step4 = seq.querySelector('[data-step="4"]'); // CTA
+
+    // show only logo at start
+    if (step1) step1.classList.add('show');
+
+    // thresholds (px scrolled) for progressive reveal
+    const thresholds = [
+      { el: step2, y: 60 },   // title
+      { el: step3, y: 140 },  // description
+      { el: step4, y: 220 },  // CTA
+    ];
+
+    let lastY = -1;
+    const onScroll = () => {
+      const y = window.scrollY || window.pageYOffset || 0;
+      if (y === lastY) return;
+      lastY = y;
+      for (const t of thresholds) {
+        if (t.el && y >= t.y) t.el.classList.add('show');
+      }
+    };
+
+    // run once in case we start mid-page
+    onScroll();
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // Init: fetch counts, set up observer and canvases (one-time)
   useEffect(() => {
     let observer;
@@ -224,10 +261,55 @@ useEffect(() => {
         }
 
         let mouse = { x: null, y: null };
+        let mouseSuppressed = false; // when true, ignore mouse attraction until next real movement
+
+        // --- idle release control (20s idle) ---
+        let lastMouseTs = performance.now();
+        let releaseActive = false;
+        let releaseStart = 0;
+        const IDLE_MS = 20000;          // user idle threshold
+        const RELEASE_MS = 5000;        // time to smoothly fade out mouse influence
+
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+        function triggerRelease(force = false) {
+          const now = performance.now();
+          // prevent re-triggering too often unless forced
+          if (!force && releaseActive) return;
+          releaseActive = true;
+          releaseStart = now;
+
+          // add a small one‑time outward + tangential impulse to break the ring
+          const maxR = 200;
+          for (const p of particlesArray) {
+            if (mouse.x == null || mouse.y == null) break;
+            const dx = p.x - mouse.x;
+            const dy = p.y - mouse.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            if (dist < maxR) {
+              const nx = dx / dist;
+              const ny = dy / dist;
+              // radial impulse + a little swirl to avoid a perfect circle
+              const tangential = 0.3;
+              p.vx += nx * 0.6 - ny * tangential * (Math.random() * 0.6);
+              p.vy += ny * 0.6 + nx * tangential * (Math.random() * 0.6);
+            }
+          }
+        }
+
+        // also release when the tab loses focus (alt‑tab)
+        window.addEventListener('blur', () => triggerRelease(true));
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') triggerRelease(true);
+        });
 
         window.addEventListener('mousemove', (e) => {
           mouse.x = e.clientX;
           mouse.y = e.clientY;
+          lastMouseTs = performance.now();
+          mouseSuppressed = false; // user interacted again -> enable influence
+          if (releaseActive) releaseActive = false;
         });
 
         for (let i = 0; i < 70; i++) {
@@ -257,6 +339,40 @@ useEffect(() => {
           }
           ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // --- mouse influence and idle-release logic ---
+          const now = performance.now();
+          // smoothly fade mouse influence during release
+          let influence = 1;
+          if (releaseActive) {
+            const t = Math.min(1, (now - releaseStart) / RELEASE_MS);
+            influence = 1 - easeOutCubic(t);
+            if (t >= 1) {
+              releaseActive = false;
+              mouseSuppressed = true; // keep attraction off until user moves again
+            }
+          } else if (mouseSuppressed) {
+            influence = 0; // no attraction while suppressed
+          }
+
+          // trigger release when the user is idle and a sizeable cluster exists
+          if (
+            !releaseActive &&
+            !mouseSuppressed &&
+            now - lastMouseTs > IDLE_MS &&
+            mouse.x != null && mouse.y != null &&
+            frameCount % 20 === 0
+          ) {
+            let nearby = 0;
+            const radius = 160;
+            for (let i = 0; i < particlesArray.length; i++) {
+              const dx = particlesArray[i].x - mouse.x;
+              const dy = particlesArray[i].y - mouse.y;
+              if (dx * dx + dy * dy < radius * radius) nearby++;
+            }
+            if (nearby > 18) triggerRelease();
+          }
+
           particlesArray.forEach((p) => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -268,14 +384,15 @@ useEffect(() => {
             p.x += p.dx;
             p.y += p.dy;
 
-            if (mouse.x && mouse.y) {
+            // --- mouse force, faded by influence, no hard ring ---
+            if (!mouseSuppressed && mouse.x != null && mouse.y != null) {
               const dx = mouse.x - p.x;
               const dy = mouse.y - p.y;
               const distance = Math.sqrt(dx * dx + dy * dy);
               const maxDistance = 400;
-
               if (distance < maxDistance) {
-                const force = 0.005 * (1 - distance / maxDistance); // fade with distance
+                let force = 0.005 * (1 - distance / maxDistance);
+                force *= influence; // fade to zero while releasing
                 p.x += dx * force;
                 p.y += dy * force;
               }
@@ -284,12 +401,16 @@ useEffect(() => {
             p.x += p.vx;
             p.y += p.vy;
 
-            p.vx *= 0.995; // gradual slowdown for smoother motion
-            p.vy *= 0.995;
+            // --- velocity damping and soft clamp ---
+            const damp = releaseActive ? 0.98 : 0.995; // a touch more damping during release
+            p.vx *= damp;
+            p.vy *= damp;
 
-            if (p.vx > 0.3 || p.vx < -0.3) p.vx *= -1;
-            if (p.vy > 0.3 || p.vy < -0.3) p.vy *= -1;
+            // soft clamp instead of flipping sign (prevents oscillations)
+            if (Math.abs(p.vx) > 0.35) p.vx *= 0.9;
+            if (Math.abs(p.vy) > 0.35) p.vy *= 0.9;
 
+            // boundaries (unchanged)
             if (p.x <= 0 || p.x >= canvas.width) p.vx *= -1;
             if (p.y <= 0 || p.y >= canvas.height) p.vy *= -1;
 
@@ -432,114 +553,111 @@ useEffect(() => {
             {/* Main Content */}
             <main className="flex-grow">
               {/* Hero Section */}
-              <header className="max-w-4xl mx-auto text-center py-12 px-4">
-                {/* Logo */}
-                <div className="flex justify-center mb-[-60px]" data-aos="fade-up">
-                  <img
-                    src="/logo.png"
-                    alt="SoundChain Logo"
-                    className="w-[630px] max-w-full ml-[-0px] logo-pulse"
-                  />
-                </div>
+              <header className="max-w-4xl mx-auto text-center py-12 px-4 overflow-visible relative">
+                <div id="hero-seq" className="hero-seq">
+                  {/* Logo */}
+                  <div className="flex justify-center mb-[-60px]" data-step="1">
+                    <img
+                      src="/logo.png"
+                      alt="SoundChain Logo"
+                      className="w-[630px] max-w-full ml-[-0px] logo-pulse"
+                    />
+                  </div>
 
-                {/* Title */}
-                <h1
-                  className="text-4xl md:text-6xl font-bold mt-[-10px] mb-4"
-                  data-aos="fade-up"
-                  data-aos-delay="200"
-                >
-                  SoundChain – Music, Ownership, Community.
-                </h1>
+                  {/* Title */}
+                  <h1
+                    className="text-4xl md:text-6xl font-bold mb-8 leading-[1.15] hero-gradient-text hero-glow"
+                    data-step="2"
+                  >
+                    SoundChain – Music, Ownership, Community.
+                  </h1>
 
-                {/* Description */}
-                <div className="" data-aos="fade-up" data-aos-delay="400">
-                  <p className="text-lg md:text-xl mb-4 text-gray-300">
-                    Own the music you love. Discover the future of music with Web3.
-                  </p>
-                  <p className="text-md md:text-lg text-gray-400 max-w-2xl mx-auto mb-6">
-                    A new music platform that empowers artists, fans, and creators
-                    through blockchain. NFTs, rewards, and real-world perks — all in
-                    one ecosystem.
-                  </p>
-                </div>
+                  {/* Description */}
+                  <div data-step="3">
+                    <p className="text-lg md:text-xl mt-8 mb-5 hero-subtitle">
+                      Own the music you love. Discover the future of music with Web3.
+                    </p>
+                    <p className="text-md md:text-lg text-gray-300 max-w-2xl mx-auto mt-2 mb-8">
+                      A new <span className="hero-highlight">music platform</span> that empowers artists, fans, and creators
+                      through blockchain. <span className="hero-highlight">NFTs</span>, <span className="hero-highlight">rewards</span>, and <span className="hero-highlight">real-world perks</span> — all in
+                      one ecosystem.
+                    </p>
+                  </div>
 
-                {/* CTA */}
-                <div
-                  className="flex flex-col items-center space-y-4"
-                  data-aos="fade-up"
-                  data-aos-delay="600"
-                >
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    className="px-4 py-3 rounded-xl w-96 text-white bg-transparent focus:outline-none border-2 border-[#8B5FFF] focus:border-[#a58fff] shadow-[0_0_10px_transparent] focus:shadow-[0_0_15px_#8B5FFF] transition duration-300"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                  />
-                  <button
-                    className="bg-[#8B5FFF] hover:bg-[#7a4fe0] hover:shadow-[0_0_20px_#8B5FFF] px-6 py-3 rounded-xl font-bold text-lg transition duration-300 transform hover:scale-105"
-                    onClick={async () => {
-                      if (!email) {
-                        showToast({
-                          title: "Email required",
-                          message: "Please enter your email to join early access.",
-                          icon: "❌"
-                        });
-                        return;
-                      }
-                      try {
-                        const res = await fetch("/api/send", {
-                          method: "POST",
-                          headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                          },
-                          cache: 'no-store',
-                          body: JSON.stringify({ email })
-                        });
-
-                        let j;
-                        try {
-                          j = await res.json();
-                        } catch (e) {
-                          const txt = await res.text();
-                          console.log("Non-JSON response from /api/send:", txt);
-                        }
-
-                        if (res.ok) {
-                          setEmail("");
-                          if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
-                            setJoinedCount(j.count);
-                            const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
-                            setTargetProgress(pct);
-                            if (document.getElementById('progress-section')) {
-                              setProgress(pct);
-                            }
-                          }
+                  {/* CTA */}
+                  <div className="flex flex-col items-center mt-10 space-y-5" data-step="4">
+                    <input
+                      type="email"
+                      placeholder="Enter your email"
+                      className="px-4 py-3 rounded-xl w-96 text-white bg-transparent focus:outline-none border-2 border-[#8B5FFF] focus:border-[#a58fff] shadow-[0_0_10px_transparent] focus:shadow-[0_0_15px_#8B5FFF] transition duration-300"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                    />
+                    <button
+                      className="bg-[#8B5FFF] hover:bg-[#7a4fe0] hover:shadow-[0_0_20px_#8B5FFF] px-6 py-3 rounded-xl font-bold text-lg transition duration-300 transform hover:scale-105"
+                      onClick={async () => {
+                        if (!email) {
                           showToast({
-                            title: "You're in!",
-                            message: "Thanks for joining early access to SoundChain.",
-                            icon: "🎉"
-                          });
-                        } else {
-                          showToast({
-                            title: "Oops!",
-                            message: `There was an error (status ${res.status}). Please try again.`,
+                            title: "Email required",
+                            message: "Please enter your email to join early access.",
                             icon: "❌"
                           });
+                          return;
                         }
-                      } catch (err) {
-                        showToast({
-                          title: "Oops!",
-                          message: "There was an error. Please try again.",
-                          icon: "❌"
-                        });
-                        console.error(err);
-                      }
-                    }}
-                  >
-                    Join Early Access
-                  </button>
+                        try {
+                          const res = await fetch("/api/send", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              "Accept": "application/json"
+                            },
+                            cache: 'no-store',
+                            body: JSON.stringify({ email })
+                          });
+
+                          let j;
+                          try {
+                            j = await res.json();
+                          } catch (e) {
+                            const txt = await res.text();
+                            console.log("Non-JSON response from /api/send:", txt);
+                          }
+
+                          if (res.ok) {
+                            setEmail("");
+                            if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
+                              setJoinedCount(j.count);
+                              const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
+                              setTargetProgress(pct);
+                              if (document.getElementById('progress-section')) {
+                                setProgress(pct);
+                              }
+                            }
+                            showToast({
+                              title: "You're in!",
+                              message: "Thanks for joining early access to SoundChain.",
+                              icon: "🎉"
+                            });
+                          } else {
+                            showToast({
+                              title: "Oops!",
+                              message: `There was an error (status ${res.status}). Please try again.`,
+                              icon: "❌"
+                            });
+                          }
+                        } catch (err) {
+                          showToast({
+                            title: "Oops!",
+                            message: "There was an error. Please try again.",
+                            icon: "❌"
+                          });
+                          console.error(err);
+                        }
+                      }}
+                    >
+                      Join Early Access
+                    </button>
+                  </div>
                 </div>
               </header>
 
