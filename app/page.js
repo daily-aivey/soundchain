@@ -171,7 +171,10 @@ useEffect(() => {
         if (!target) return;
         const rect = target.getBoundingClientRect();
         const vh = window.innerHeight || document.documentElement.clientHeight;
-        const inView = rect.top < vh && rect.bottom >= 0;
+        // mirror the IntersectionObserver rootMargin: '0px 0px -35% 0px' logic
+        const topTrigger = vh * 0.65;   // 65% of viewport height
+        const bottomTrigger = vh * 0.35; // 35% from top = bottom margin
+        const inView = rect.top < topTrigger && rect.bottom > bottomTrigger;
         if (inView) {
           setProgressVisible(true);
           setProgress(targetProgress);
@@ -180,13 +183,17 @@ useEffect(() => {
 
       observer = new IntersectionObserver(
         (entries) => {
-          const visible = entries[0].isIntersecting;
+          const e = entries[0];
+          const visible = e.isIntersecting && e.intersectionRatio >= 0.6;
           setProgressVisible(visible);
           if (visible) {
             setProgress(targetProgress);
           }
         },
-        { threshold: 0.4 }
+        {
+          threshold: [0, 0.25, 0.5, 0.6, 0.75, 1],
+          rootMargin: '0px 0px -35% 0px'
+        }
       );
 
       if (target) {
