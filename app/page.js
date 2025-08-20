@@ -1,6 +1,8 @@
 "use client";
 
+
 import AOS from "aos";
+import 'aos/dist/aos.css';
 
 import Head from "next/head";
 import { useEffect, useState } from "react";
@@ -471,7 +473,10 @@ export default function Home() {
         el.classList.remove("gate");
       });
       // počkej 50ms aby se DOM změny projevily, pak refresh AOS
-      setTimeout(() => AOS.refresh(), 50);
+      setTimeout(() => {
+        AOS.refreshHard();
+        console.log("[AOS] Refreshed after scroll reveal");
+      }, 50);
     };
     window.addEventListener('scroll', reveal, { once: true, passive: true });
     window.addEventListener('wheel', reveal, { once: true, passive: true });
