@@ -506,36 +506,17 @@ h1.hero-gradient-text {
   isolation: isolate;
 }
 
-/* =============================
-   Hero staged reveal (slower)
-   ============================= */
-.hero-seq [data-step] {
+/* === Simple scroll reveal effect === */
+.reveal {
   opacity: 0;
-  transform: translateY(18px) scale(0.98);
-  filter: blur(2px);
-  transition:
-    opacity 1500ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 1500ms cubic-bezier(0.16, 1, 0.3, 1),
-    filter 1500ms ease;
+  transform: translateY(40px) scale(0.97);
+  filter: blur(4px);
+  transition: opacity 1s ease, transform 1s ease, filter 1s ease;
   will-change: opacity, transform, filter;
 }
 
-.hero-seq [data-step].show {
+.revealed {
   opacity: 1;
   transform: translateY(0) scale(1);
   filter: blur(0);
-}
-
-/* Soft stagger once visible */
-.hero-seq [data-step="2"].show { transition-delay: 200ms; }
-.hero-seq [data-step="3"].show { transition-delay: 400ms; }
-.hero-seq [data-step="4"].show { transition-delay: 600ms; }
-
-/* Respect users who prefer reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .hero-seq [data-step] {
-    transition: none;
-    transform: none;
-    filter: none;
-  }
 }

@@ -1,5 +1,8 @@
 "use client";
 
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
@@ -83,70 +86,19 @@ export default function Home() {
   const [targetProgress, setTargetProgress] = useState(0);
   const GOAL = 5000;
 
-useEffect(() => {
-  const generatedSegments = Array.from({ length: 80 }).map(() => {
-    return {
-      delay: `${Math.random().toFixed(3)}s`,
-      duration: `${(0.4 + Math.random() * 0.8).toFixed(2)}s`,
-      height: `${(6 + Math.random() * 14).toFixed(2)}px`
-    };
-  });
-  setSegments(generatedSegments);
-
-  const interval = setInterval(() => {
-    setSegments(prev =>
-      prev.map(seg => ({
-        ...seg,
-        height: `${(6 + Math.random() * 14).toFixed(2)}px`
-      }))
-    );
-  }, 300);
-
-  return () => {
-    clearInterval(interval);
-  };
-}, []);
-
-  // Hero staged reveal by scroll distance (show only logo on load)
   useEffect(() => {
-    const seq = document.getElementById('hero-seq');
-    if (!seq) return;
-
-    const step1 = seq.querySelector('[data-step="1"]'); // logo
-    const step2 = seq.querySelector('[data-step="2"]'); // title
-    const step3 = seq.querySelector('[data-step="3"]'); // description
-    const step4 = seq.querySelector('[data-step="4"]'); // CTA
-
-    // show only logo at start
-    if (step1) step1.classList.add('show');
-
-    // thresholds (px scrolled) for progressive reveal
-    const thresholds = [
-      { el: step2, y: 60 },   // title
-      { el: step3, y: 140 },  // description
-      { el: step4, y: 220 },  // CTA
-    ];
-
-    let lastY = -1;
-    const onScroll = () => {
-      const y = window.scrollY || window.pageYOffset || 0;
-      if (y === lastY) return;
-      lastY = y;
-      for (const t of thresholds) {
-        if (t.el && y >= t.y) t.el.classList.add('show');
-      }
-    };
-
-    // run once in case we start mid-page
-    onScroll();
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    AOS.init({
+      duration: 600, // rychlejší animace
+      once: true,
+      offset: 150,   // spustí dřív
+    });
   }, []);
+
+
 
   // Init: fetch counts, set up observer and canvases (one-time)
   useEffect(() => {
-    let observer;
+    let observer, revealObserver;
 
     const init = async () => {
       // initialize progress/count from API
@@ -171,9 +123,9 @@ useEffect(() => {
         if (!target) return;
         const rect = target.getBoundingClientRect();
         const vh = window.innerHeight || document.documentElement.clientHeight;
-        // mirror the IntersectionObserver rootMargin: '0px 0px -35% 0px' logic
-        const topTrigger = vh * 0.65;   // 65% of viewport height
-        const bottomTrigger = vh * 0.35; // 35% from top = bottom margin
+        // earlier: show when section is mostly in view
+        const topTrigger = vh * 0.90;   // earlier: show when section is mostly in view
+        const bottomTrigger = vh * 0.10;
         const inView = rect.top < topTrigger && rect.bottom > bottomTrigger;
         if (inView) {
           setProgressVisible(true);
@@ -184,15 +136,15 @@ useEffect(() => {
       observer = new IntersectionObserver(
         (entries) => {
           const e = entries[0];
-          const visible = e.isIntersecting && e.intersectionRatio >= 0.6;
-          setProgressVisible(visible);
-          if (visible) {
+          if (e.isIntersecting) {
+            setProgressVisible(true);
             setProgress(targetProgress);
+            observer.disconnect();
           }
         },
         {
-          threshold: [0, 0.25, 0.5, 0.6, 0.75, 1],
-          rootMargin: '0px 0px -35% 0px'
+          threshold: [0.15, 0.5, 0.75, 1],
+          rootMargin: '0px 0px -10% 0px'
         }
       );
 
@@ -246,7 +198,7 @@ useEffect(() => {
           backgroundCanvas.width = Math.floor(window.innerWidth * dprBg2);
           backgroundCanvas.height = Math.floor(window.innerHeight * dprBg2);
           ctxBg.setTransform(dprBg2, 0, 0, dprBg2, 0, 0);
-        });
+        }, { passive: true });
       }
 
       const canvas = document.getElementById('particles');
@@ -317,7 +269,7 @@ useEffect(() => {
           lastMouseTs = performance.now();
           mouseSuppressed = false; // user interacted again -> enable influence
           if (releaseActive) releaseActive = false;
-        });
+        }, { passive: true });
 
         for (let i = 0; i < 70; i++) {
           const x = Math.random() * canvas.width;
@@ -455,7 +407,7 @@ useEffect(() => {
           canvas.width = Math.floor(window.innerWidth * dpr2);
           canvas.height = Math.floor(window.innerHeight * dpr2);
           ctx.setTransform(dpr2, 0, 0, dpr2, 0, 0);
-        });
+        }, { passive: true });
       }
 
       const extraCanvas = document.getElementById('extra-particles');
@@ -500,16 +452,34 @@ useEffect(() => {
           extraCanvas.width = Math.floor(window.innerWidth * dprExtra2);
           extraCanvas.height = Math.floor(window.innerHeight * dprExtra2);
           ctxExtra.setTransform(dprExtra2, 0, 0, dprExtra2, 0, 0);
-        });
+        }, { passive: true });
       }
     };
 
     init();
 
+
     return () => {
       if (observer) observer.disconnect();
     };
   }, []); // one-time init
+
+  // Reveal hero text/CTA after first user scroll
+  useEffect(() => {
+    const reveal = () => {
+      document.body.classList.add("hero-revealed");
+    };
+    window.addEventListener('scroll', reveal, { once: true, passive: true });
+    window.addEventListener('wheel', reveal, { once: true, passive: true });
+    window.addEventListener('keydown', reveal, { once: true });
+    window.addEventListener('touchstart', reveal, { once: true, passive: true });
+    return () => {
+      window.removeEventListener('scroll', reveal);
+      window.removeEventListener('wheel', reveal);
+      window.removeEventListener('keydown', reveal);
+      window.removeEventListener('touchstart', reveal);
+    };
+  }, []);
 
   // React to changes in targetProgress or visibility and push the width
   useEffect(() => {
@@ -517,6 +487,7 @@ useEffect(() => {
       setProgress(targetProgress);
     }
   }, [targetProgress, progressVisible]);
+
 
   return (
     <>
@@ -563,7 +534,7 @@ useEffect(() => {
               <header className="max-w-4xl mx-auto text-center py-12 px-4 overflow-visible relative">
                 <div id="hero-seq" className="hero-seq">
                   {/* Logo */}
-                  <div className="flex justify-center mb-[-60px]" data-step="1">
+                  <div className="flex justify-center mb-[-60px]" data-aos="fade-up">
                     <img
                       src="/logo.png"
                       alt="SoundChain Logo"
@@ -574,13 +545,14 @@ useEffect(() => {
                   {/* Title */}
                   <h1
                     className="text-4xl md:text-6xl font-bold mb-8 leading-[1.15] hero-gradient-text hero-glow"
-                    data-step="2"
+                    data-aos="fade-up"
+                    data-aos-delay="200"
                   >
                     SoundChain – Music, Ownership, Community.
                   </h1>
 
                   {/* Description */}
-                  <div data-step="3">
+                  <div data-aos="fade-up" data-aos-delay="400">
                     <p className="text-lg md:text-xl mt-8 mb-5 hero-subtitle">
                       Own the music you love. Discover the future of music with Web3.
                     </p>
@@ -592,7 +564,7 @@ useEffect(() => {
                   </div>
 
                   {/* CTA */}
-                  <div className="flex flex-col items-center mt-10 space-y-5" data-step="4">
+                  <div className="flex flex-col items-center mt-10 space-y-5" data-aos="fade-up" data-aos-delay="600">
                     <input
                       type="email"
                       placeholder="Enter your email"
@@ -671,9 +643,10 @@ useEffect(() => {
               {/* Progress Bar */}
               <section
                 id="progress-section"
-                className="max-w-4xl mx-auto px-4 mb-12"
+                className="max-w-4xl mx-auto px-4 mb-12 progress-reveal"
+                data-visible={progressVisible ? 'true' : 'false'}
                 data-aos="fade-up"
-                data-aos-delay="800"
+                data-aos-delay="300"
               >
                 <div className="signup-progress mb-2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress)}>
                   <div
@@ -688,7 +661,7 @@ useEffect(() => {
               <section
                 className="max-w-4xl mx-auto px-4 grid md:grid-cols-3 gap-8 text-center mb-16"
                 data-aos="fade-up"
-                data-aos-delay="1000"
+                data-aos-delay="500"
               >
                 <div className="transition-transform duration-300 hover:scale-105">
                   <img src="/nft.png" alt="NFT Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
@@ -712,7 +685,7 @@ useEffect(() => {
             <footer
               className="text-center text-gray-500 py-6"
               data-aos="fade-up"
-              data-aos-delay="1200"
+              data-aos-delay="300"
             >
               <div className="flex justify-center space-x-6 mb-4">
                 <a
