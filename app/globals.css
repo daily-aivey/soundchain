@@ -520,11 +520,3 @@ h1.hero-gradient-text {
   transform: translateY(0) scale(1);
   filter: blur(0);
 }
-
-/* Prevent AOS animation flash before scroll reveal */
-body:not(.hero-revealed) [data-aos] {
-  opacity: 0 !important;
-  transform: none !important;
-  transition: none !important;
-  pointer-events: none;
-}
