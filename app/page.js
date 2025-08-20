@@ -467,6 +467,10 @@ export default function Home() {
   useEffect(() => {
     const reveal = () => {
       document.body.classList.add("hero-revealed");
+      document.querySelectorAll(".gate").forEach(el => {
+        el.classList.remove("gate");
+      });
+      AOS.refresh(); // restartuje AOS animace po odstranění .gate
     };
     window.addEventListener('scroll', reveal, { once: true, passive: true });
     window.addEventListener('wheel', reveal, { once: true, passive: true });
@@ -543,7 +547,7 @@ export default function Home() {
 
                   {/* Title */}
                   <h1
-                    className="text-4xl md:text-6xl font-bold mb-8 leading-[1.15] hero-gradient-text hero-glow"
+                    className="text-4xl md:text-6xl font-bold mb-8 leading-[1.15] hero-gradient-text hero-glow gate"
                     data-aos="fade-up"
                     data-aos-delay="200"
                   >
@@ -551,7 +555,7 @@ export default function Home() {
                   </h1>
 
                   {/* Description */}
-                  <div data-aos="fade-up" data-aos-delay="400">
+                  <div data-aos="fade-up" data-aos-delay="400" className="gate">
                     <p className="text-lg md:text-xl mt-8 mb-5 hero-subtitle">
                       Own the music you love. Discover the future of music with Web3.
                     </p>
@@ -563,7 +567,7 @@ export default function Home() {
                   </div>
 
                   {/* CTA */}
-                  <div className="flex flex-col items-center mt-10 space-y-5" data-aos="fade-up" data-aos-delay="600">
+                  <div className="flex flex-col items-center mt-10 space-y-5 gate" data-aos="fade-up" data-aos-delay="600">
                     <input
                       type="email"
                       placeholder="Enter your email"
