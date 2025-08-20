@@ -470,7 +470,8 @@ export default function Home() {
       document.querySelectorAll(".gate").forEach(el => {
         el.classList.remove("gate");
       });
-      AOS.refresh(); // restartuje AOS animace po odstranění .gate
+      // počkej 50ms aby se DOM změny projevily, pak refresh AOS
+      setTimeout(() => AOS.refresh(), 50);
     };
     window.addEventListener('scroll', reveal, { once: true, passive: true });
     window.addEventListener('wheel', reveal, { once: true, passive: true });
