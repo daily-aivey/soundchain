@@ -87,13 +87,27 @@ export default function Home() {
   const [targetProgress, setTargetProgress] = useState(0);
   const GOAL = 5000;
 
-  useEffect(() => {
-    AOS.init({
-      duration: 600, // rychlejší animace
-      once: true,
-      offset: 150,   // spustí dřív
-    });
-  }, []);
+// Initialize AOS for scroll animations
+useEffect(() => {
+  // Initialize AOS with proper configuration
+  AOS.init({
+    duration: 1000,
+    easing: 'ease-out-cubic',
+    once: true,
+    offset: 100,
+    delay: 0,
+    disable: false
+  });
+
+  // Force refresh after a brief delay to catch all elements
+  setTimeout(() => {
+    AOS.refresh();
+  }, 100);
+
+  return () => {
+    // Cleanup on unmount
+  };
+}, []);
 
 
 
@@ -166,8 +180,8 @@ export default function Home() {
         const bgParticles = [];
         for (let i = 0; i < 120; i++) {
           bgParticles.push({
-            x: Math.random() * backgroundCanvas.width,
-            y: Math.random() * backgroundCanvas.height,
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
             radius: Math.random() * 3 + 1,
             dx: (Math.random() - 0.5) * 0.2,
             dy: (Math.random() - 0.5) * 0.2,
@@ -175,7 +189,7 @@ export default function Home() {
         }
 
         function animateBgParticles() {
-          ctxBg.clearRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+          ctxBg.clearRect(0, 0, window.innerWidth, window.innerHeight);
           bgParticles.forEach((p) => {
             ctxBg.beginPath();
             ctxBg.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -187,8 +201,8 @@ export default function Home() {
             p.x += p.dx;
             p.y += p.dy;
 
-            if (p.x <= 0 || p.x >= backgroundCanvas.width) p.dx *= -1;
-            if (p.y <= 0 || p.y >= backgroundCanvas.height) p.dy *= -1;
+            if (p.x <= 0 || p.x >= window.innerWidth) p.dx *= -1;
+            if (p.y <= 0 || p.y >= window.innerHeight) p.dy *= -1;
           });
           requestAnimationFrame(animateBgParticles);
         }
@@ -273,8 +287,8 @@ export default function Home() {
         }, { passive: true });
 
         for (let i = 0; i < 70; i++) {
-          const x = Math.random() * canvas.width;
-          const y = Math.random() * canvas.height;
+          const x = Math.random() * window.innerWidth;
+          const y = Math.random() * window.innerHeight;
           particlesArray.push({
             x,
             y,
@@ -298,7 +312,7 @@ export default function Home() {
             currentParticleColor = getComputedParticleColor();
           }
           ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
           // --- mouse influence and idle-release logic ---
           const now = performance.now();
@@ -371,11 +385,11 @@ export default function Home() {
             if (Math.abs(p.vy) > 0.35) p.vy *= 0.9;
 
             // boundaries (unchanged)
-            if (p.x <= 0 || p.x >= canvas.width) p.vx *= -1;
-            if (p.y <= 0 || p.y >= canvas.height) p.vy *= -1;
+            if (p.x <= 0 || p.x >= window.innerWidth) p.vx *= -1;
+            if (p.y <= 0 || p.y >= window.innerHeight) p.vy *= -1;
 
-            if (p.x < 0 || p.x > canvas.width) p.dx = -p.dx;
-            if (p.y < 0 || p.y > canvas.height) p.dy = -p.dy;
+            if (p.x < 0 || p.x > window.innerWidth) p.dx = -p.dx;
+            if (p.y < 0 || p.y > window.innerHeight) p.dy = -p.dy;
           });
 
           for (let i = 0; i < particlesArray.length; i++) {
@@ -422,8 +436,8 @@ export default function Home() {
         const extraParticles = [];
         for (let i = 0; i < 100; i++) {
           extraParticles.push({
-            x: Math.random() * extraCanvas.width,
-            y: Math.random() * extraCanvas.height,
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
             radius: Math.random() * 2 + 1,
             dx: (Math.random() - 0.5) * 0.3,
             dy: (Math.random() - 0.5) * 0.3,
@@ -431,7 +445,7 @@ export default function Home() {
         }
 
         function animateExtra() {
-          ctxExtra.clearRect(0, 0, extraCanvas.width, extraCanvas.height);
+          ctxExtra.clearRect(0, 0, window.innerWidth, window.innerHeight);
           extraParticles.forEach((p) => {
             ctxExtra.beginPath();
             ctxExtra.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -441,8 +455,8 @@ export default function Home() {
             p.x += p.dx;
             p.y += p.dy;
 
-            if (p.x <= 0 || p.x >= extraCanvas.width) p.dx *= -1;
-            if (p.y <= 0 || p.y >= extraCanvas.height) p.dy *= -1;
+            if (p.x <= 0 || p.x >= window.innerWidth) p.dx *= -1;
+            if (p.y <= 0 || p.y >= window.innerHeight) p.dy *= -1;
           });
           requestAnimationFrame(animateExtra);
         }
@@ -465,30 +479,7 @@ export default function Home() {
     };
   }, []); // one-time init
 
-  // Reveal hero text/CTA after first user scroll
-  useEffect(() => {
-    const reveal = () => {
-      document.body.classList.add("hero-revealed");
-      document.querySelectorAll(".gate").forEach(el => {
-        el.classList.remove("gate");
-      });
-      // počkej 50ms aby se DOM změny projevily, pak refresh AOS
-      setTimeout(() => {
-        AOS.refreshHard();
-        console.log("[AOS] Refreshed after scroll reveal");
-      }, 50);
-    };
-    window.addEventListener('scroll', reveal, { once: true, passive: true });
-    window.addEventListener('wheel', reveal, { once: true, passive: true });
-    window.addEventListener('keydown', reveal, { once: true });
-    window.addEventListener('touchstart', reveal, { once: true, passive: true });
-    return () => {
-      window.removeEventListener('scroll', reveal);
-      window.removeEventListener('wheel', reveal);
-      window.removeEventListener('keydown', reveal);
-      window.removeEventListener('touchstart', reveal);
-    };
-  }, []);
+  // No longer needed - AOS handles scroll reveals directly
 
   // React to changes in targetProgress or visibility and push the width
   useEffect(() => {
@@ -496,6 +487,7 @@ export default function Home() {
       setProgress(targetProgress);
     }
   }, [targetProgress, progressVisible]);
+
 
 
   return (
@@ -541,121 +533,121 @@ export default function Home() {
             <main className="flex-grow">
               {/* Hero Section */}
               <header className="max-w-4xl mx-auto text-center py-12 px-4 overflow-visible relative">
-                <div id="hero-seq" className="hero-seq">
-                  {/* Logo */}
-                  <div className="flex justify-center mb-[-60px]" data-aos="fade-up">
-                    <img
-                      src="/logo.png"
-                      alt="SoundChain Logo"
-                      className="w-[630px] max-w-full ml-[-0px] logo-pulse"
-                    />
-                  </div>
+                {/* Logo - Always visible, no AOS */}
+                <div className="flex justify-center mb-[-60px] logo-always-visible">
+                  <img
+                    src="/logo.png"
+                    alt="SoundChain Logo"
+                    className="w-[630px] max-w-full ml-[-0px] logo-pulse"
+                  />
+                </div>
 
-                  {/* Title */}
-                  <h1
-                    className="text-4xl md:text-6xl font-bold mb-8 leading-[1.15] hero-gradient-text hero-glow gate"
-                    data-aos="fade-up"
-                    data-aos-delay="200"
-                  >
-                    SoundChain – Music, Ownership, Community.
-                  </h1>
+                {/* Title - Step 1 */}
+                <h1
+                  className="text-4xl md:text-6xl font-bold mb-8 leading-[1.15] hero-gradient-text hero-glow"
+                  data-aos="fade-up"
+                  data-aos-delay="0"
+                  data-aos-offset="300"
+                >
+                  SoundChain – Music, Ownership, Community.
+                </h1>
 
-                  {/* Description */}
-                  <div data-aos="fade-up" data-aos-delay="400" className="gate">
-                    <p className="text-lg md:text-xl mt-8 mb-5 hero-subtitle">
-                      Own the music you love. Discover the future of music with Web3.
-                    </p>
-                    <p className="text-md md:text-lg text-gray-300 max-w-2xl mx-auto mt-2 mb-8">
-                      A new <span className="hero-highlight">music platform</span> that empowers artists, fans, and creators
-                      through blockchain. <span className="hero-highlight">NFTs</span>, <span className="hero-highlight">rewards</span>, and <span className="hero-highlight">real-world perks</span> — all in
-                      one ecosystem.
-                    </p>
-                  </div>
+                {/* Description - Step 2 */}
+                <div data-aos="fade-up" data-aos-delay="200" data-aos-offset="250">
+                  <p className="text-lg md:text-xl mt-8 mb-5 hero-subtitle">
+                    Own the music you love. Discover the future of music with Web3.
+                  </p>
+                  <p className="text-md md:text-lg text-gray-300 max-w-2xl mx-auto mt-2 mb-8">
+                    A new <span className="hero-highlight">music platform</span> that empowers artists, fans, and creators
+                    through blockchain. <span className="hero-highlight">Music</span>, <span className="hero-highlight">NFTs</span>, <span className="hero-highlight">rewards</span>, and <span className="hero-highlight">exclusive communities</span> — all in
+                    one ecosystem.
+                  </p>
+                </div>
 
-                  {/* CTA */}
-                  <div className="flex flex-col items-center mt-10 space-y-5 gate" data-aos="fade-up" data-aos-delay="600">
-                    <input
-                      type="email"
-                      placeholder="Enter your email"
-                      className="px-4 py-3 rounded-xl w-96 text-white bg-transparent focus:outline-none border-2 border-[#8B5FFF] focus:border-[#a58fff] shadow-[0_0_10px_transparent] focus:shadow-[0_0_15px_#8B5FFF] transition duration-300"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                    />
-                    <button
-                      className="bg-[#8B5FFF] hover:bg-[#7a4fe0] hover:shadow-[0_0_20px_#8B5FFF] px-6 py-3 rounded-xl font-bold text-lg transition duration-300 transform hover:scale-105"
-                      onClick={async () => {
-                        if (!email) {
-                          showToast({
-                            title: "Email required",
-                            message: "Please enter your email to join early access.",
-                            icon: "❌"
-                          });
-                          return;
-                        }
+                {/* CTA - Step 3 */}
+                <div className="flex flex-col items-center mt-10 space-y-5" data-aos="fade-up" data-aos-delay="400" data-aos-offset="200">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="px-4 py-3 rounded-xl w-96 text-white bg-transparent focus:outline-none border-2 border-[#8B5FFF] focus:border-[#a58fff] shadow-[0_0_10px_transparent] focus:shadow-[0_0_15px_#8B5FFF] transition duration-300"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                  <button
+                    className="bg-[#8B5FFF] hover:bg-[#7a4fe0] hover:shadow-[0_0_20px_#8B5FFF] px-6 py-3 rounded-xl font-bold text-lg transition duration-300 transform hover:scale-105"
+                    onClick={async () => {
+                      if (!email) {
+                        showToast({
+                          title: "Email required",
+                          message: "Please enter your email to join early access.",
+                          icon: "❌"
+                        });
+                        return;
+                      }
+                      try {
+                        const res = await fetch("/api/send", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                          },
+                          cache: 'no-store',
+                          body: JSON.stringify({ email })
+                        });
+
+                        let j;
                         try {
-                          const res = await fetch("/api/send", {
-                            method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                              "Accept": "application/json"
-                            },
-                            cache: 'no-store',
-                            body: JSON.stringify({ email })
-                          });
+                          j = await res.json();
+                        } catch (e) {
+                          const txt = await res.text();
+                          console.log("Non-JSON response from /api/send:", txt);
+                        }
 
-                          let j;
-                          try {
-                            j = await res.json();
-                          } catch (e) {
-                            const txt = await res.text();
-                            console.log("Non-JSON response from /api/send:", txt);
-                          }
-
-                          if (res.ok) {
-                            setEmail("");
-                            if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
-                              setJoinedCount(j.count);
-                              const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
-                              setTargetProgress(pct);
-                              if (document.getElementById('progress-section')) {
-                                setProgress(pct);
-                              }
+                        if (res.ok) {
+                          setEmail("");
+                          if (j && typeof j.count === 'number' && typeof j.goal === 'number') {
+                            setJoinedCount(j.count);
+                            const pct = Math.max(0, Math.min(100, (j.count / j.goal) * 100));
+                            setTargetProgress(pct);
+                            if (document.getElementById('progress-section')) {
+                              setProgress(pct);
                             }
-                            showToast({
-                              title: "You're in!",
-                              message: "Thanks for joining early access to SoundChain.",
-                              icon: "🎉"
-                            });
-                          } else {
-                            showToast({
-                              title: "Oops!",
-                              message: `There was an error (status ${res.status}). Please try again.`,
-                              icon: "❌"
-                            });
                           }
-                        } catch (err) {
+                          showToast({
+                            title: "You're in!",
+                            message: "Thanks for joining early access to SoundChain.",
+                            icon: "🎉"
+                          });
+                        } else {
                           showToast({
                             title: "Oops!",
-                            message: "There was an error. Please try again.",
+                            message: `There was an error (status ${res.status}). Please try again.`,
                             icon: "❌"
                           });
-                          console.error(err);
                         }
-                      }}
-                    >
-                      Join Early Access
-                    </button>
-                  </div>
+                      } catch (err) {
+                        showToast({
+                          title: "Oops!",
+                          message: "There was an error. Please try again.",
+                          icon: "❌"
+                        });
+                        console.error(err);
+                      }
+                    }}
+                  >
+                    Join Waitlist
+                  </button>
                 </div>
               </header>
 
-              {/* Progress Bar */}
+              {/* Progress Bar - Step 4 */}
               <section
                 id="progress-section"
                 className="max-w-4xl mx-auto px-4 mb-12 progress-reveal"
                 data-visible={progressVisible ? 'true' : 'false'}
                 data-aos="fade-up"
-                data-aos-delay="300"
+                data-aos-delay="1200"
+                data-aos-offset="150"
               >
                 <div className="signup-progress mb-2" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress)}>
                   <div
@@ -666,36 +658,36 @@ export default function Home() {
                 <p className="text-center text-gray-400">{joinedCount.toLocaleString()} people joined</p>
               </section>
 
-              {/* Benefits Section */}
+              {/* Benefits Section - Step 5 */}
               <section
                 className="max-w-4xl mx-auto px-4 grid md:grid-cols-3 gap-8 text-center mb-16"
                 data-aos="fade-up"
-                data-aos-delay="500"
+                data-aos-delay="1500"
+                data-aos-offset="200"
               >
-                <div className="transition-transform duration-300 hover:scale-105">
-                  <img src="/nft.png" alt="NFT Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
+                <div id="benefit-nft" data-benefit="card" className="transition-transform duration-300 hover:scale-105" data-aos="fade-up" data-aos-delay="1600" data-aos-offset="150">
+                  <img src="/nft.png" alt="NFT Icon" className="w-14 h-14 mx-auto mb-4" />
                   <h3 className="font-bold text-xl mb-2">NFT Releases</h3>
                   <p className="text-gray-400">Own your favorite tracks</p>
                 </div>
-                <div className="transition-transform duration-300 hover:scale-105">
-                  <img src="/community.png" alt="Community Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
+                <div id="benefit-community" data-benefit="card" className="transition-transform duration-300 hover:scale-105" data-aos="fade-up" data-aos-delay="1700" data-aos-offset="150">
+                  <img src="/community.png" alt="Community Icon" className="w-14 h-14 mx-auto mb-4" />
                   <h3 className="font-bold text-xl mb-2">Community Rewards</h3>
-                  <p className="text-gray-400">Support artists, get perks</p>
+                  <p className="text-gray-400">Support artists, get rewards</p>
                 </div>
-                <div className="transition-transform duration-300 hover:scale-105">
-                  <img src="/creator.png" alt="Creator Icon" className="w-14 h-14 mx-auto mb-4 animate-fade-in" />
+                <div id="benefit-creator" data-benefit="card" className="transition-transform duration-300 hover:scale-105" data-aos="fade-up" data-aos-delay="1800" data-aos-offset="150">
+                  <img src="/creator.png" alt="Creator Icon" className="w-14 h-14 mx-auto mb-4" />
                   <h3 className="font-bold text-xl mb-2">Creator Economy</h3>
                   <p className="text-gray-400">Fair splits for artists & producers</p>
                 </div>
               </section>
             </main>
 
-            {/* Footer */}
-            <footer
-              className="text-center text-gray-500 py-6"
-              data-aos="fade-up"
-              data-aos-delay="300"
-            >
+            {/* Adaptive page spacer - extends when benefit cards animate */}
+            <div id="page-spacer" className="page-spacer"></div>
+            
+            {/* Natural footer that reveals after benefits load */}
+            <footer className="text-center text-gray-500 py-6" data-aos="fade-up" data-aos-delay="1200">
               <div className="flex justify-center space-x-6 mb-4">
                 <a
                   href="https://x.com/joinsoundchain"

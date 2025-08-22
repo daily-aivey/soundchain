@@ -520,3 +520,42 @@ h1.hero-gradient-text {
   transform: translateY(0) scale(1);
   filter: blur(0);
 }
+
+
+
+/* === AOS Scroll Animation System === */
+/* Hide all AOS elements initially to prevent FOUC */
+[data-aos] {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* Show elements when AOS animates them in */
+[data-aos].aos-animate {
+  opacity: 1 !important;
+  pointer-events: auto;
+}
+
+/* Fallback for no-JS users */
+html.no-js [data-aos] {
+  opacity: 1 !important;
+  pointer-events: auto;
+}
+
+/* Logo fade-in animation on page load */
+.logo-always-visible {
+  opacity: 0;
+  animation: logoFadeIn 1.5s ease-out 0.5s forwards;
+  pointer-events: auto;
+}
+
+@keyframes logoFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

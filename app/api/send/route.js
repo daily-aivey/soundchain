@@ -76,92 +76,70 @@ export async function POST(req) {
   }
 }
 
-// Publicly reachable PNGs (update to your URLs when you deploy)
+// Minimalistic email template that matches the landing page vibe
 function getWelcomeEmailHtml(siteUrl, xUrl, igUrl) {
-  // Publicly reachable PNGs (update to your URLs when you deploy)
-  const LOGO_PNG = 'https://sndchain.xyz/email/logo-72.png';
-  const X_PNG    = 'https://sndchain.xyz/email/x-32.png';
-  const IG_PNG   = 'https://sndchain.xyz/email/ig-32.png';
-
   return `
-  <span style="color:transparent;display:none;opacity:0;visibility:hidden;mso-hide:all;font-size:1px;line-height:1px;max-height:0;max-width:0;overflow:hidden;">
-    Welcome to SoundChain! We’re excited to have you on board.
-  </span>
-  <div style="margin:0;padding:0;background:#0b0712;color:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,'Noto Sans',sans-serif;">
-    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin:0;padding:24px 0;background:#0b0712;">
-      <tr>
-        <td align="center">
-          <table role="presentation" width="520" border="0" cellspacing="0" cellpadding="0" style="border-radius:22px;overflow:hidden;background:#120a1b;">
-            <!-- Header gradient bar to echo site background -->
-            <tr>
-              <td height="8" style="background: radial-gradient(120% 140% at 20% 10%, #2a0f63 0%, rgba(42,15,99,0) 40%), radial-gradient(120% 140% at 80% 15%, #6d1bb6 0%, rgba(109,27,182,0) 45%), radial-gradient(120% 140% at 50% 90%, #0ea5e9 0%, rgba(14,165,233,0) 45%), linear-gradient(180deg,#130a20 0%, #0b0712 100%);"></td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:28px 32px 8px 32px;">
-                <img src="${LOGO_PNG}" width="72" height="72" alt="SoundChain" style="display:block;border:0;border-radius:16px;background:#0b0b0f;">
-              </td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:0 32px;">
-                <h1 style="margin:0;font-size:28px;line-height:1.25;font-weight:800;letter-spacing:-.3px;color:#ffffff;">Welcome to SoundChain!</h1>
-              </td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:14px 32px 0 32px;">
-                <p style="margin:0;font-size:16px;line-height:1.65;color:#d1d5db;">Thanks for signing up! We're excited to have you with us on the journey to a new music era. We'll keep you posted about launch updates and early access perks.</p>
-              </td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:22px 32px 0 32px;">
-                <a href="${siteUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;border-radius:12px;padding:14px 28px;font-weight:700;font-size:16px;letter-spacing:.02em;color:#ffffff;background:linear-gradient(90deg,#7c3aed 0%, #9333ea 30%, #4f46e5 65%, #06b6d4 100%); box-shadow:0 6px 22px rgba(124,58,237,.35);">Visit SoundChain</a>
-              </td>
-            </tr>
-
-            <!-- Divider that matches the dark theme -->
-            <tr>
-              <td style="padding:28px 32px 0 32px;"><hr style="border:none;border-top:1px solid #241a36;margin:0;"></td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:14px 32px 8px 32px;">
-                <p style="margin:0;font-size:14px;color:#a1a1aa;">Follow us</p>
-              </td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:4px 0 26px 0;">
-                <table role="presentation" border="0" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td align="center" style="padding:0 10px;">
-                      <a href="${xUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">
-                        <img src="${X_PNG}" width="32" height="32" alt="X (Twitter)" style="display:block;border:0;">
-                      </a>
-                    </td>
-                    <td align="center" style="padding:0 10px;">
-                      <a href="${igUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">
-                        <img src="${IG_PNG}" width="32" height="32" alt="Instagram" style="display:block;border:0;">
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
-            <tr>
-              <td align="center" style="padding:0 32px 32px 32px;color:#9ca3af;">
-                <p style="margin:0;font-size:12px;">&copy; ${new Date().getFullYear()} SoundChain. All rights reserved.</p>
-                <p style="margin:6px 0 0 0;font-size:12px;"><a href="${siteUrl}" target="_blank" rel="noopener noreferrer" style="color:#67e8f9;text-decoration:none;">sndchain.xyz</a></p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </div>`;
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
+    <title>Welcome to SoundChain</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#ffffff;color:#000000;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+    <div style="background-color:#ffffff;padding:40px 20px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:480px;margin:0 auto;">
+        
+        <!-- Main Content Card -->
+        <tr>
+          <td>
+            <!-- Gradient Border Wrapper -->
+            <div style="background:linear-gradient(135deg,#8B5FFF 0%,#A78BFA 25%,#4FC3F7 50%,#C084FC 75%,#8B5FFF 100%);padding:4px;border-radius:20px;">
+              <div style="background-color:#ffffff;border-radius:16px;padding:48px 32px;text-align:center;">
+            
+            <!-- Logo -->
+            <div style="margin-bottom:32px;text-align:center;">
+              <div style="width:64px;height:64px;margin:0 auto;background:linear-gradient(135deg,#8B5FFF,#4FC3F7);border-radius:16px;line-height:64px;text-align:center;font-size:24px;font-weight:800;color:#ffffff;letter-spacing:-1px;">SC</div>
+            </div>
+            
+            <!-- Main Message -->
+            <h1 style="margin:0 0 16px 0;font-size:28px;font-weight:700;color:#000000;letter-spacing:-0.5px;">Welcome to SoundChain</h1>
+            
+            <p style="margin:0 0 32px 0;font-size:16px;line-height:1.5;color:#6b7280;">Thanks for joining the waitlist.<br>We'll keep you updated.</p>
+            
+            <!-- Minimal Features -->
+            <div style="margin-bottom:32px;padding:24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+              <p style="margin:0;font-size:14px;color:#8B5FFF;font-weight:600;margin-bottom:8px;">What you'll get:</p>
+              <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">
+                Early access • Tester features • Special rewards
+              </p>
+            </div>
+            
+            <!-- Social Links -->
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto 24px auto;">
+              <tr>
+                <td style="padding:0 6px;">
+                  <a href="${xUrl}" style="display:inline-block;padding:12px 16px;background-color:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:#000000;font-size:16px;font-weight:700;font-family:Arial,sans-serif;">X</a>
+                </td>
+                <td style="padding:0 6px;">
+                  <a href="${igUrl}" style="display:inline-block;padding:12px 16px;background-color:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;text-decoration:none;color:#000000;font-size:16px;font-weight:700;font-family:Arial,sans-serif;">IG</a>
+                </td>
+              </tr>
+            </table>
+            
+            <!-- Footer -->
+            <p style="margin:0;font-size:12px;color:#6b7280;">SoundChain 2025 • <a href="${siteUrl}" style="color:#8B5FFF;text-decoration:none;">sndchain.xyz</a></p>
+            
+              </div>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+  </html>`
 }
 
 export async function GET() {
